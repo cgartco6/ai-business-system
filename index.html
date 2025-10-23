@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CostByte - Business Intelligence Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #ecf0f1;
+            --dark-text: #2c3e50;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 2rem;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--secondary-color);
+        }
+        
+        .stat-card.revenue {
+            border-left-color: var(--success-color);
+        }
+        
+        .stat-card.clients {
+            border-left-color: var(--secondary-color);
+        }
+        
+        .stat-card.target {
+            border-left-color: var(--warning-color);
+        }
+        
+        .stat-card.growth {
+            border-left-color: var(--danger-color);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .chart-title {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .clients-table {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--success-color);
+            transition: width 0.3s ease;
+        }
+        
+        .tier-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .tier-basic {
+            background-color: #bdc3c7;
+            color: var(--dark-text);
+        }
+        
+        .tier-pro {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .tier-enterprise {
+            background-color: #9b59b6;
+            color: white;
+        }
+        
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-healthy {
+            background-color: var(--success-color);
+        }
+        
+        .status-warning {
+            background-color: var(--warning-color);
+        }
+        
+        .status-critical {
+            background-color: var(--danger-color);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">CostByte Intelligence</div>
+        <div class="nav-links">
+            <a href="#" id="refresh-btn">Refresh Data</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Business Intelligence Dashboard</h1>
+            <div class="system-status">
+                <span class="status-indicator status-healthy"></span>
+                <span>System Status: <strong id="system-status">Healthy</strong></span>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="stats-grid">
+            <div class="stat-card revenue">
+                <div class="stat-label">Current Monthly Revenue</div>
+                <div class="stat-value" id="current-revenue">R 0</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="revenue-progress" style="width: 0%"></div>
+                </div>
+                <div id="revenue-target">Target: R 1,000,000</div>
+            </div>
+            
+            <div class="stat-card clients">
+                <div class="stat-label">Active Clients</div>
+                <div class="stat-value" id="active-clients">0</div>
+                <div id="client-growth">+0 this month</div>
+            </div>
+            
+            <div class="stat-card target">
+                <div class="stat-label">Monthly Target Progress</div>
+                <div class="stat-value" id="progress-percentage">0%</div>
+                <div id="revenue-remaining">R 1,000,000 remaining</div>
+            </div>
+            
+            <div class="stat-card growth">
+                <div class="stat-label">Revenue Growth</div>
+                <div class="stat-value" id="growth-percentage">0%</div>
+                <div id="growth-trend">vs previous month</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <div class="chart-title">Revenue Growth Trend</div>
+                <div id="revenue-chart" style="height: 300px;"></div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">Client Distribution by Tier</div>
+                <div id="tier-chart" style="height: 300px;"></div>
+            </div>
+        </div>
+
+        <!-- Clients Table -->
+        <div class="chart-container">
+            <div class="chart-title">Active Clients</div>
+            <div class="clients-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Contact</th>
+                            <th>Location</th>
+                            <th>Service Tier</th>
+                            <th>Total Revenue</th>
+                            <th>First Payment</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clients-table-body">
+                        <!-- Client data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            setInterval(loadDashboardData, 30000); // Refresh every 30 seconds
+            
+            document.getElementById('refresh-btn').addEventListener('click', function(e) {
+                e.preventDefault();
+                loadDashboardData();
+            });
+        });
+
+        function loadDashboardData() {
+            fetch('/api/dashboard-data')
+                .then(response => response.json())
+                .then(data => {
+                    updateMetrics(data);
+                    updateCharts(data);
+                })
+                .catch(error => console.error('Error loading dashboard data:', error));
+
+            loadClientDetails();
+        }
+
+        function loadClientDetails() {
+            fetch('/api/client-details')
+                .then(response => response.json())
+                .then(clients => {
+                    updateClientsTable(clients);
+                })
+                .catch(error => console.error('Error loading client details:', error));
+        }
+
+        function updateMetrics(data) {
+            const revenue = data.revenue;
+            
+            // Update revenue metrics
+            document.getElementById('current-revenue').textContent = 
+                'R ' + formatCurrency(revenue.current_revenue);
+            document.getElementById('progress-percentage').textContent = 
+                revenue.progress_percentage + '%';
+            document.getElementById('revenue-progress').style.width = 
+                revenue.progress_percentage + '%';
+            document.getElementById('revenue-remaining').textContent = 
+                'R ' + formatCurrency(revenue.target_revenue - revenue.current_revenue) + ' remaining';
+            
+            // Update client metrics
+            document.getElementById('active-clients').textContent = 
+                data.clients.active_clients;
+            
+            // Calculate growth
+            const monthlyTrend = revenue.monthly_trend;
+            if (monthlyTrend.length >= 2) {
+                const current = monthlyTrend[monthlyTrend.length - 1].revenue;
+                const previous = monthlyTrend[monthlyTrend.length - 2].revenue;
+                const growth = previous > 0 ? ((current - previous) / previous) * 100 : 100;
+                document.getElementById('growth-percentage').textContent = 
+                    Math.round(growth) + '%';
+            }
+        }
+
+        function updateCharts(data) {
+            // Revenue growth chart
+            const revenueOptions = {
+                series: [{
+                    name: 'Monthly Revenue',
+                    data: data.revenue.monthly_trend.map(item => item.revenue)
+                }],
+                chart: {
+                    height: 300,
+                    type: 'line',
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                stroke: {
+                    curve: 'smooth'
+                },
+                title: {
+                    text: 'Monthly Revenue Trend',
+                    align: 'left'
+                },
+                grid: {
+                    row: {
+                        colors: ['#f3f3f3', 'transparent'],
+                        opacity: 0.5
+                    },
+                },
+                xaxis: {
+                    categories: data.revenue.monthly_trend.map(item => item.month),
+                },
+                yaxis: {
+                    title: {
+                        text: 'Revenue (ZAR)'
+                    },
+                    labels: {
+                        formatter: function(value) {
+                            return 'R ' + (value / 1000).toFixed(0) + 'K';
+                        }
+                    }
+                }
+            };
+
+            const revenueChart = new ApexCharts(document.querySelector("#revenue-chart"), revenueOptions);
+            revenueChart.render();
+
+            // Tier distribution chart
+            const tierData = Object.entries(data.clients.tier_distribution).map(([tier, count]) => ({
+                x: tier.charAt(0).toUpperCase() + tier.slice(1),
+                y: count
+            }));
+
+            const tierOptions = {
+                series: tierData.map(item => item.y),
+                chart: {
+                    height: 300,
+                    type: 'donut',
+                },
+                labels: tierData.map(item => item.x),
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                            width: 200
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }]
+            };
+
+            const tierChart = new ApexCharts(document.querySelector("#tier-chart"), tierOptions);
+            tierChart.render();
+        }
+
+        function updateClientsTable(clients) {
+            const tbody = document.getElementById('clients-table-body');
+            tbody.innerHTML = '';
+
+            clients.forEach(client => {
+                const row = document.createElement('tr');
+                
+                const tierClass = `tier-${client.current_tier?.toLowerCase() || 'pro'}`;
+                
+                row.innerHTML = `
+                    <td>${escapeHtml(client.company_name)}</td>
+                    <td>${escapeHtml(client.contact_person)}<br><small>${escapeHtml(client.email)}</small></td>
+                    <td>${escapeHtml(client.location)}, ${escapeHtml(client.country)}</td>
+                    <td><span class="tier-badge ${tierClass}">${client.current_tier?.toUpperCase() || 'PRO'}</span></td>
+                    <td>R ${formatCurrency(client.total_revenue)}</td>
+                    <td>${formatDate(client.first_payment)}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-ZA').format(Math.round(amount));
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('en-ZA');
+        }
+
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
