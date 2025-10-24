@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CostByte - Payment Management</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .payment-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+        }
+        
+        .payment-card.payfast {
+            border-left-color: #e74c3c;
+        }
+        
+        .payment-card.stripe {
+            border-left-color: #6772e5;
+        }
+        
+        .payment-card.eft {
+            border-left-color: #2ecc71;
+        }
+        
+        .payment-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .payout-allocation {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .allocation-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .allocation-owner {
+            border-top: 4px solid #e74c3c;
+        }
+        
+        .allocation-ai {
+            border-top: 4px solid #3498db;
+        }
+        
+        .allocation-reserve {
+            border-top: 4px solid #2ecc71;
+        }
+        
+        .progress-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(#3498db 0% 60%, #e74c3c 60% 80%, #2ecc71 80% 100%);
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Payment & Payout Management</h1>
+            <div class="header-actions">
+                <button id="process-payouts" class="btn btn-primary">Process Daily Payouts</button>
+                <button id="refresh-payments" class="btn btn-secondary">Refresh Data</button>
+            </div>
+        </div>
+
+        <!-- Payment Statistics -->
+        <div class="payment-stats">
+            <div class="stat-item">
+                <div class="stat-label">Today's Revenue</div>
+                <div class="stat-value" id="today-revenue">R 0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Pending Payouts</div>
+                <div class="stat-value" id="pending-payouts">R 0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Successful Payments</div>
+                <div class="stat-value" id="successful-payments">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Payment Success Rate</div>
+                <div class="stat-value" id="success-rate">0%</div>
+            </div>
+        </div>
+
+        <!-- Payout Allocation -->
+        <div class="payout-allocation">
+            <div class="allocation-card allocation-owner">
+                <h3>Owner Distribution (60%)</h3>
+                <div class="allocation-amount" id="owner-amount">R 0</div>
+                <div class="account-details">
+                    <strong>FNB Account</strong><br>
+                    <small>***29215</small>
+                </div>
+            </div>
+            
+            <div class="allocation-card allocation-ai">
+                <h3>AI Development Fund (20%)</h3>
+                <div class="allocation-amount" id="ai-amount">R 0</div>
+                <div class="account-details">
+                    <strong>RNB Account</strong><br>
+                    <small>AI Research & Development</small>
+                </div>
+            </div>
+            
+            <div class="allocation-card allocation-reserve">
+                <h3>Business Reserve (20%)</h3>
+                <div class="allocation-amount" id="reserve-amount">R 0</div>
+                <div class="account-details">
+                    <strong>FNB Savings</strong><br>
+                    <small>Emergency & Growth Fund</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="payment-methods">
+            <div class="payment-card payfast">
+                <h3>PayFast Integration</h3>
+                <div class="status-indicator online"></div>
+                <div class="method-stats">
+                    <div>Processed: <strong id="payfast-processed">R 0</strong></div>
+                    <div>Success Rate: <strong id="payfast-rate">0%</strong></div>
+                </div>
+                <button class="btn btn-outline" onclick="testPayFast()">Test Integration</button>
+            </div>
+            
+            <div class="payment-card stripe">
+                <h3>Stripe Integration</h3>
+                <div class="status-indicator online"></div>
+                <div class="method-stats">
+                    <div>Processed: <strong id="stripe-processed">R 0</strong></div>
+                    <div>Success Rate: <strong id="stripe-rate">0%</strong></div>
+                </div>
+                <button class="btn btn-outline" onclick="testStripe()">Test Integration</button>
+            </div>
+            
+            <div class="payment-card eft">
+                <h3>EFT Processing</h3>
+                <div class="status-indicator online"></div>
+                <div class="method-stats">
+                    <div>Pending: <strong id="eft-pending">R 0</strong></div>
+                    <div>Processed: <strong id="eft-processed">R 0</strong></div>
+                </div>
+                <button class="btn btn-outline" onclick="checkEFT()">Check EFTs</button>
+            </div>
+        </div>
+
+        <!-- Payment Charts -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <div class="chart-title">Payment Method Distribution</div>
+                <canvas id="payment-method-chart" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Daily Revenue Trend</div>
+                <canvas id="revenue-trend-chart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Payouts -->
+        <div class="chart-container">
+            <div class="chart-title">Recent Payouts</div>
+            <div class="clients-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Destination</th>
+                            <th>Status</th>
+                            <th>Reference</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payouts-table-body">
+                        <!-- Payout data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Payment dashboard functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPaymentData();
+            setInterval(loadPaymentData, 60000); // Refresh every minute
+            
+            document.getElementById('process-payouts').addEventListener('click', processPayouts);
+            document.getElementById('refresh-payments').addEventListener('click', loadPaymentData);
+        });
+
+        function loadPaymentData() {
+            fetch('/api/payment-data')
+                .then(response => response.json())
+                .then(data => {
+                    updatePaymentStats(data);
+                    updatePayoutAllocation(data);
+                    updatePaymentCharts(data);
+                    updatePayoutsTable(data.recent_payouts);
+                })
+                .catch(error => console.error('Error loading payment data:', error));
+        }
+
+        function processPayouts() {
+            if (!confirm('Process daily payouts now?')) return;
+            
+            fetch('/api/process-payouts', { method: 'POST' })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('Payouts processed successfully!');
+                        loadPaymentData();
+                    } else {
+                        alert('Payout processing failed: ' + (result.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    alert('Error processing payouts: ' + error);
+                });
+        }
+
+        function updatePaymentStats(data) {
+            document.getElementById('today-revenue').textContent = 
+                'R ' + formatCurrency(data.today_revenue);
+            document.getElementById('pending-payouts').textContent = 
+                'R ' + formatCurrency(data.pending_payouts);
+            document.getElementById('successful-payments').textContent = 
+                data.successful_payments;
+            document.getElementById('success-rate').textContent = 
+                data.success_rate + '%';
+        }
+
+        function updatePayoutAllocation(data) {
+            document.getElementById('owner-amount').textContent = 
+                'R ' + formatCurrency(data.allocations.owner);
+            document.getElementById('ai-amount').textContent = 
+                'R ' + formatCurrency(data.allocations.ai_fund);
+            document.getElementById('reserve-amount').textContent = 
+                'R ' + formatCurrency(data.allocations.reserve);
+        }
+
+        function updatePaymentCharts(data) {
+            // Payment method distribution chart
+            const methodCtx = document.getElementById('payment-method-chart').getContext('2d');
+            new Chart(methodCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.method_distribution.labels,
+                    datasets: [{
+                        data: data.method_distribution.values,
+                        backgroundColor: ['#e74c3c', '#6772e5', '#2ecc71']
+                    }]
+                }
+            });
+
+            // Revenue trend chart
+            const trendCtx = document.getElementById('revenue-trend-chart').getContext('2d');
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: data.revenue_trend.dates,
+                    datasets: [{
+                        label: 'Daily Revenue',
+                        data: data.revenue_trend.amounts,
+                        borderColor: '#3498db',
+                        tension: 0.1
+                    }]
+                }
+            });
+        }
+
+        function updatePayoutsTable(payouts) {
+            const tbody = document.getElementById('payouts-table-body');
+            tbody.innerHTML = '';
+
+            payouts.forEach(payout => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDate(payout.date)}</td>
+                    <td><span class="tier-badge tier-${payout.category}">${payout.category.toUpperCase()}</span></td>
+                    <td>R ${formatCurrency(payout.amount)}</td>
+                    <td>${payout.destination}</td>
+                    <td><span class="status-badge status-${payout.status}">${payout.status}</span></td>
+                    <td><small>${payout.reference}</small></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function testPayFast() {
+            fetch('/api/test-payfast', { method: 'POST' })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('PayFast integration test successful!');
+                    } else {
+                        alert('PayFast test failed: ' + result.error);
+                    }
+                });
+        }
+
+        function testStripe() {
+            fetch('/api/test-stripe', { method: 'POST' })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('Stripe integration test successful!');
+                    } else {
+                        alert('Stripe test failed: ' + result.error);
+                    }
+                });
+        }
+
+        function checkEFT() {
+            fetch('/api/check-eft', { method: 'POST' })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.found > 0) {
+                        alert(`Found ${result.found} new EFT payments!`);
+                        loadPaymentData();
+                    } else {
+                        alert('No new EFT payments found.');
+                    }
+                });
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-ZA').format(amount);
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('en-ZA');
+        }
+    </script>
+</body>
+</html>
