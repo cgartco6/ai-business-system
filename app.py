@@ -386,3 +386,36 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
+# Add to CostBytePlatform class in app.py
+
+def setup_payment_systems(self):
+    """Initialize payment and payout systems"""
+    self.payment_processor = PaymentProcessor(self.db_connection, self.encryption_engine)
+    self.payout_agent = PayoutAgent(self.db_connection, self.encryption_engine)
+    self.logger.info("✅ Payment systems initialized")
+
+def process_automatic_payouts(self):
+    """Process automatic payouts on schedule"""
+    try:
+        result = self.payout_agent.process_daily_payouts()
+        if result['success']:
+            self.logger.info(f"Automatic payouts processed: R{result['total_payout']:,.2f}")
+        else:
+            self.logger.warning(f"Payout processing skipped: {result.get('reason')}")
+    except Exception as e:
+        self.logger.error(f"Automatic payout error: {e}")
+
+# Add to start_background_services method
+def payout_scheduler():
+    while True:
+        try:
+            # Process payouts daily at 9 AM
+            current_hour = datetime.now().hour
+            if current_hour == 9:  # 9 AM
+                platform.process_automatic_payouts()
+            time.sleep(3600)  # Check every hour
+        except Exception as e:
+            logging.error(f"Payout scheduler error: {e}")
+            time.sleep(300)  # Wait 5 minutes on error
+
+threading.Thread(target=payout_scheduler, daemon=True).start()
